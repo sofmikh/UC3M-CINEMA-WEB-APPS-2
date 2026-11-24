@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Popcorn Cinema{% endblock %}</title>
+    <!-- Tipografías del diseño: Syne (títulos) + IBM Plex Mono (texto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cinema.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <a href="{{ url_for('main.index') }}" class="brand">popcorn/cinema</a>
+        <nav aria-label="Main">
+            <ul class="nav-links">
+                <li><a href="{{ url_for('main.index') }}" class="{{ 'active' if request.endpoint == 'main.index' }}">now showing</a></li>
+                <li><a href="{{ url_for('main.bookings') }}" class="{{ 'active' if request.endpoint == 'main.bookings' }}">my bookings</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><span class="nav-user">hi, {{ current_user.name }}</span></li>
+                    <li><a href="{{ url_for('auth.logout') }}">log out</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('auth.login') }}" class="{{ 'active' if request.endpoint == 'auth.login' }}">log in</a></li>
+                    <li><a href="{{ url_for('auth.signup') }}" class="nav-pill">sign up</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+ 
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+ 
+    <footer>
+        <p>&copy; 2026 PopcornCinema · Web Applications, UC3M</p>
+    </footer>
+ 
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+ 
+ 

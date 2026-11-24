@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}My bookings · Popcorn Cinema{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">My bookings.</h1>
+
+    {% if pending %}
+    <h2 class="section-title">Your new booking</h2>
+    <article class="ticket ticket-new">
+        <div class="ticket-stub ticket-stub-text">
+            <span>new</span>
+            <span class="stub-big">{{ pending.seats|length }}×</span>
+        </div>
+        <div class="ticket-body">
+            <h3 class="ticket-title">{{ pending.movie }}</h3>
+            <p class="ticket-meta">{{ pending.showtime }}</p>
+            <p>Seats: <strong>{{ pending.seats|join(' · ') }}</strong></p>
+            <p>Food: {{ pending.food }}</p>
+            <p class="ticket-total">Total to pay at counter: {{ "%.2f"|format(pending.total_price) }} €</p>
+        </div>
+    </article>
+    {% endif %}
+
+    <h2 class="section-title">Upcoming</h2>
+    <div class="ticket-list">
+        {% for b in bookings if b.is_future %}
+        <article class="ticket">
+            <div class="ticket-stub ticket-stub-text">
+                <span>{{ b.id }}</span>
+                <span class="stub-big">{{ b.seats }}×</span>
+            </div>
+            <div class="ticket-body">
+                <h3 class="ticket-title">{{ b.movie }}</h3>
+                <p class="ticket-meta">{{ b.showtime }} · {{ b.seats }} seat(s)</p>
+                <p>Food: {{ b.food }}</p>
+                <p class="ticket-total">Total to pay at counter: {{ "%.2f"|format(b.total_price) }} €</p>
+            </div>
+        </article>
+        {% else %}
+        <p>No upcoming bookings.</p>
+        {% endfor %}
+    </div>
+
+    <h2 class="section-title">Past</h2>
+    <div class="ticket-list">
+        {% for b in bookings if not b.is_future %}
+        <article class="ticket ticket-past">
+            <div class="ticket-stub ticket-stub-text">
+                <span>{{ b.id }}</span>
+                <span class="stub-big">{{ b.seats }}×</span>
+            </div>
+            <div class="ticket-body">
+                <h3 class="ticket-title">{{ b.movie }}</h3>
+                <p class="ticket-meta">{{ b.showtime }} · {{ b.seats }} seat(s)</p>
+                <p>Total paid: {{ "%.2f"|format(b.total_price) }} €</p>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+{% endblock %}

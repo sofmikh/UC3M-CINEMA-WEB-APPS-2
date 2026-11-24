@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ movie.title }} · Popcorn Cinema{% endblock %}
+
+{% block content %}
+    <a href="{{ url_for('main.index') }}" class="back-link">← back to now showing</a>
+
+    <div class="detail-layout">
+        <img src="{{ url_for('static', filename='posters/' ~ movie.poster_url) }}" alt="Poster of {{ movie.title }}" class="detail-poster">
+
+        <div class="detail-info">
+            <p class="ticket-meta"><span class="badge">{{ movie.age_rating }}</span> {{ movie.genre }} — {{ movie.duration }} min</p>
+            <h1 class="detail-title">{{ movie.title }}</h1>
+            <p class="detail-synopsis">{{ movie.synopsis }}</p>
+
+            <h2 class="section-title">Pick a showtime</h2>
+            <div class="showtime-grid">
+                {% for st in showtimes %}
+                <a href="{{ url_for('main.seats', showtime_id=st.id) }}" class="showtime-card">
+                    <span class="showtime-time">{{ st.show_time.strftime('%H:%M') }}</span>
+                    <span class="showtime-screen">{{ st.screen.name }}</span>
+                    <span class="showtime-price">{{ "%.2f"|format(st.price) }} €</span>
+                    <span class="showtime-cta">choose seats →</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

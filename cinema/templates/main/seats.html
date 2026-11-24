@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+ 
+{% block title %}Choose seats · {{ movie.title }}{% endblock %}
+ 
+{% block content %}
+    <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}" class="back-link">← change showtime</a>
+    <h1 class="page-title">Choose your seats.</h1>
+ 
+    <!-- Todo es un único formulario: butacas + combos + botón -->
+    <form id="seat-form" action="{{ url_for('main.bookings') }}" method="get" data-price="{{ showtime.price }}">
+        <input type="hidden" name="showtime_id" value="{{ showtime.id }}">
+ 
+        <div class="booking-layout">
+            <div class="seat-area">
+                <div class="seat-scroll">
+                    <div class="seat-map">
+                        <div class="screen" aria-hidden="true"></div>
+                        <p class="screen-label">screen</p>
+ 
+                        {% for row in rows %}
+                        <div class="seat-row">
+                            <span class="row-letter">{{ row }}</span>
+                            {% for n in range(1, seats_per_row + 1) %}
+                                {% set seat_id = row ~ n %}
+                                <!-- Cada butaca es un checkbox oculto + su label (el cuadrado que se ve) -->
+                                <input type="checkbox" name="seats" value="{{ seat_id }}" id="seat-{{ seat_id }}" class="seat-input"
+                                       {% if seat_id in occupied %}disabled{% endif %}>
+                                <label for="seat-{{ seat_id }}" class="seat" title="{{ seat_id }}">
+                                    <span class="sr-only">Row {{ row }} seat {{ n }}{% if seat_id in occupied %} (taken){% endif %}</span>
+                                </label>
+                                {% if n == seats_per_row // 2 %}<span class="aisle"></span>{% endif %}
+                            {% endfor %}
+                            <span class="row-letter">{{ row }}</span>
+                        </div>
+                        {% endfor %}
+ 
+                        <div class="legend">
+                            <span><span class="seat"></span>free</span>
+                            <span><span class="seat mine"></span>your choice</span>
+                            <span><span class="seat taken"></span>taken</span>
+                        </div>
+                    </div>
+                </div>
+ 
+                <h2 class="section-title">Add a combo <span class="optional">(optional)</span></h2>
+                <div class="combo-list">
+                    {% for pkg in packages %}
+                    <div class="combo">
+                        <div>
+                            <div class="combo-name">{{ pkg.name }}</div>
+                            <div class="combo-desc">{{ pkg.desc }}</div>
+                        </div>
+                        <label class="combo-qty">
+                            +{{ "%.2f"|format(pkg.price) }} €
+                            <input type="number" name="package_{{ pkg.id }}" value="0" min="0" max="10" data-price="{{ pkg.price }}" aria-label="Quantity of {{ pkg.name }}">
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+ 
+            <!-- Resumen con forma de entrada -->
+            <aside class="summary" aria-label="Your ticket">
+                <div class="summary-top">
+                    <p class="summary-label">your ticket</p>
+                    <h2 class="summary-title">{{ movie.title }}</h2>
+                    <dl class="summary-data">
+                        <div><dt>time</dt><dd>{{ showtime.show_time.strftime('%H:%M') }}</dd></div>
+                        <div><dt>screen</dt><dd>{{ showtime.screen.name }}</dd></div>
+                        <div><dt>price</dt><dd>{{ "%.2f"|format(showtime.price) }} €</dd></div>
+                    </dl>
+                </div>
+                <div class="summary-bottom">
+                    <div>
+                        <p class="summary-label">seats (<span id="seat-count">0</span>)</p>
+                        <p id="seat-list" class="seat-list">—</p>
+                    </div>
+                    <div class="total">
+                        <span>total</span>
+                        <strong id="total">0.00 €</strong>
+                    </div>
+                    <button type="submit" id="submit-btn" class="btn-primary">Continue →</button>
+                </div>
+            </aside>
+        </div>
+    </form>
+{% endblock %}
+ 
+{% block scripts %}
+<script>
+    // Actualiza el resumen cada vez que marcas una butaca o cambias un combo
+    const form = document.getElementById('seat-form');
+    const seatPrice = parseFloat(form.dataset.price);
+ 
+    function updateSummary() {
+        const chosen = Array.from(form.querySelectorAll('input[name="seats"]:checked')).map(i => i.value);
+        let total = chosen.length * seatPrice;
+        form.querySelectorAll('.combo input').forEach(i => {
+            total += (parseInt(i.value) || 0) * parseFloat(i.dataset.price);
+        });
+        document.getElementById('seat-count').textContent = chosen.length;
+        document.getElementById('seat-list').textContent = chosen.length ? chosen.join(' · ') : '—';
+        document.getElementById('total').textContent = total.toFixed(2) + ' €';
+        document.getElementById('submit-btn').disabled = chosen.length === 0;
+    }
+ 
+    form.addEventListener('change', updateSummary);
+    form.addEventListener('input', updateSummary);
+    updateSummary();
+</script>
+{% endblock %}

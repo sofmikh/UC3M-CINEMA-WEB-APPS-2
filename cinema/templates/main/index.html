@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <section class="hero">
+        <h1>Grab your<br>ticket.</h1>
+        <p>Every movie is a ticket. Pick a time, tear off the stub and head to the screen.</p>
+    </section>
+
+    <div class="ticket-list">
+        {% for movie in movies %}
+        <article class="ticket">
+            <div class="ticket-stub">
+                <img src="{{ url_for('static', filename='posters/' ~ movie.poster_url) }}" alt="">
+                <span class="stub-number">Nº 00{{ loop.index }}</span>
+                <span class="stub-age">{{ movie.age_rating }}</span>
+            </div>
+
+            <div class="ticket-body">
+                <h2 class="ticket-title">
+                    <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}">{{ movie.title }}</a>
+                </h2>
+                <p class="ticket-meta">{{ movie.genre }} — {{ movie.duration }} min</p>
+                <p class="ticket-synopsis">{{ movie.synopsis }}</p>
+
+                <div class="times">
+                    <span class="times-label">today</span>
+                    {% for st in movie.showtimes %}
+                    <a href="{{ url_for('main.seats', showtime_id=st.id) }}" class="time-pill">{{ st.show_time.strftime('%H:%M') }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+{% endblock %}
