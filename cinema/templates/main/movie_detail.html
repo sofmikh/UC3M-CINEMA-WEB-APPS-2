@@ -13,10 +13,26 @@
             <h1 class="detail-title">{{ movie.title }}</h1>
             <p class="detail-synopsis">{{ movie.synopsis }}</p>
 
-            <h2 class="section-title">Pick a showtime</h2>
-            <div class="showtime-grid">
-                {% for st in showtimes %}
+            <h2 class="section-title">Pick a day &amp; showtime</h2>
+
+            <div class="day-picker" role="tablist" aria-label="Showtime days">
+                {% for d in days_grouped %}
+                <button type="button"
+                        class="day-pill day-tab {{ 'active' if loop.first }}"
+                        data-day="{{ d.iso }}"
+                        role="tab"
+                        aria-selected="{{ 'true' if loop.first else 'false' }}">
+                    <span class="day-pill-main">{{ d.label }}</span>
+                    <span class="day-pill-sub">{{ d.sub }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            {% for d in days_grouped %}
+            <div class="showtime-grid day-panel" data-day="{{ d.iso }}" {% if not loop.first %}style="display:none;"{% endif %}>
+                {% for st in d.showtimes %}
                 <a href="{{ url_for('main.seats', showtime_id=st.id) }}" class="showtime-card">
+                    <span class="showtime-day">{{ d.label }} · {{ d.sub }}</span>
                     <span class="showtime-time">{{ st.show_time.strftime('%H:%M') }}</span>
                     <span class="showtime-screen">{{ st.screen.name }}</span>
                     <span class="showtime-price">{{ "%.2f"|format(st.price) }} €</span>
@@ -24,6 +40,28 @@
                 </a>
                 {% endfor %}
             </div>
+            {% endfor %}
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('.day-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            const targetDay = this.getAttribute('data-day');
+
+            document.querySelectorAll('.day-tab').forEach(function(t) {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
+            this.classList.add('active');
+            this.setAttribute('aria-selected', 'true');
+
+            document.querySelectorAll('.day-panel').forEach(function(panel) {
+                panel.style.display = panel.getAttribute('data-day') === targetDay ? 'grid' : 'none';
+            });
+        });
+    });
+</script>
 {% endblock %}

@@ -6,9 +6,7 @@
     <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}" class="back-link">← change showtime</a>
     <h1 class="page-title">Choose your seats.</h1>
 
-
     <form id="seat-form" action="{{ url_for('main.bookings') }}" method="post" data-price="{{ showtime.price }}">
-        <!-- CAMBIO: token CSRF (solo si usas Flask-WTF) -->
         {% if csrf_token is defined %}
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% endif %}
@@ -45,17 +43,49 @@
                     </div>
                 </div>
 
-                <h2 class="section-title">Add a combo <span class="optional">(optional)</span></h2>
+                <h2 class="section-title">Combos <span class="optional">(optional)</span></h2>
                 <div class="combo-list">
-                    {% for pkg in packages %}
+                    {% for item in combos %}
                     <div class="combo">
                         <div>
-                            <div class="combo-name">{{ pkg.name }}</div>
-                            <div class="combo-desc">{{ pkg.desc }}</div>
+                            <div class="combo-name">{{ item.name }}</div>
+                            <div class="combo-desc">{{ item.description }}</div>
                         </div>
                         <label class="combo-qty">
-                            +{{ "%.2f"|format(pkg.price) }} €
-                            <input type="number" name="package_{{ pkg.id }}" value="0" min="0" max="10" data-price="{{ pkg.price }}" aria-label="Quantity of {{ pkg.name }}">
+                            +{{ "%.2f"|format(item.price) }} €
+                            <input type="number" name="food_{{ item.id }}" value="0" min="0" max="10" data-price="{{ item.price }}" aria-label="Quantity of {{ item.name }}">
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h2 class="section-title">Food &amp; Snacks <span class="optional">(optional)</span></h2>
+                <div class="combo-list">
+                    {% for item in foods %}
+                    <div class="combo">
+                        <div>
+                            <div class="combo-name">{{ item.name }}</div>
+                            <div class="combo-desc">{{ item.description }}</div>
+                        </div>
+                        <label class="combo-qty">
+                            +{{ "%.2f"|format(item.price) }} €
+                            <input type="number" name="food_{{ item.id }}" value="0" min="0" max="10" data-price="{{ item.price }}" aria-label="Quantity of {{ item.name }}">
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h2 class="section-title">Drinks <span class="optional">(optional)</span></h2>
+                <div class="combo-list">
+                    {% for item in drinks %}
+                    <div class="combo">
+                        <div>
+                            <div class="combo-name">{{ item.name }}</div>
+                            <div class="combo-desc">{{ item.description }}</div>
+                        </div>
+                        <label class="combo-qty">
+                            +{{ "%.2f"|format(item.price) }} €
+                            <input type="number" name="food_{{ item.id }}" value="0" min="0" max="10" data-price="{{ item.price }}" aria-label="Quantity of {{ item.name }}">
                         </label>
                     </div>
                     {% endfor %}
@@ -67,6 +97,7 @@
                     <p class="summary-label">your ticket</p>
                     <h2 class="summary-title">{{ movie.title }}</h2>
                     <dl class="summary-data">
+                        <div><dt>day</dt><dd>{{ day_label }}</dd></div>
                         <div><dt>time</dt><dd>{{ showtime.show_time.strftime('%H:%M') }}</dd></div>
                         <div><dt>screen</dt><dd>{{ showtime.screen.name }}</dd></div>
                         <div><dt>price</dt><dd>{{ "%.2f"|format(showtime.price) }} €</dd></div>
@@ -89,60 +120,43 @@
 {% endblock %}
 
 {% block scripts %}
-
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
     $(document).ready(function() {
-
         let seatPrice = parseFloat($("#seat-form").attr("data-price"));
 
         let updateSummary = function() {
-
-            // seats qeu ya hemos marcado
             let chosen = [];
             $("input[name='seats']:checked").each(function(i, e) {
                 chosen.push($(e).val());
             });
 
-            // price of the seats
             let total = chosen.length * seatPrice;
 
-            // los combos
             $(".combo input").each(function(i, e) {
-                if ($(e).val() !== "") {
-                    let quantity = parseInt($(e).val());
-                    let comboPrice = parseFloat($(e).attr("data-price"));
-                    total += quantity * comboPrice;
+                let raw = $(e).val();
+                if (raw !== "") {
+                    let quantity = parseInt(raw, 10) || 0;
+                    if (quantity > 0) {
+                        let comboPrice = parseFloat($(e).attr("data-price"));
+                        total += quantity * comboPrice;
+                    }
                 }
             });
 
-            
             $("#seat-count").text(chosen.length);
 
             if (chosen.length > 0) {
-                let list = "";
-                for (let i = 0; i < chosen.length; i++) {
-                    if (i > 0) {
-                        list += " · ";
-                    }
-                    list += chosen[i];
-                }
-                $("#seat-list").text(list);
+                $("#seat-list").text(chosen.join(" · "));
             } else {
                 $("#seat-list").text("—");
             }
 
             $("#total").text(total.toFixed(2) + " €");
-
-            // the button is disabled if no seats are chosen
-            if (chosen.length === 0) {
-                $("#submit-btn").prop("disabled", true);
-            } else {
-                $("#submit-btn").prop("disabled", false);
-            }
+            $("#submit-btn").prop("disabled", chosen.length === 0);
         };
 
-        $("input[name='seats'], .combo input").on("change", updateSummary);
+        $("input[name='seats'], .combo input").on("change input", updateSummary);
         updateSummary();
     });
 </script>

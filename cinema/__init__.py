@@ -42,6 +42,18 @@ def create_app(test_config=None):
 
     with app.app_context():
         db.create_all()
+        # Seed initial demo movies, showtimes and food items if database is empty
+        if not db.session.execute(db.select(model.Movie)).scalars().first():
+            from .main import demo_movies
+            m_list, st_list = demo_movies()
+            db.session.add_all(m_list)
+            db.session.add_all(st_list)
+            db.session.commit()
+
+        if not db.session.execute(db.select(model.FoodItem)).scalars().first():
+            from .main import demo_food_items
+            db.session.add_all(demo_food_items())
+            db.session.commit()
 
     from . import main
     from . import auth

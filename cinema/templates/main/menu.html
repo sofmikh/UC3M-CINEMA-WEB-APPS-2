@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Food &amp; Drinks Menu · Popcorn Cinema{% endblock %}
+
+{% block content %}
+    <section class="hero">
+        <h1>Food &amp;<br>Drinks.</h1>
+        <p>Freshly popped in our kitchen, poured ice-cold at the bar. Add any item directly when you choose your seats.</p>
+    </section>
+
+    <div class="menu-sections">
+        <section class="menu-section">
+            <h2 class="section-title">Combos <span class="optional">(best value)</span></h2>
+            <div class="menu-grid">
+                {% for item in combos %}
+                <article class="menu-card menu-card-combo">
+                    <div class="menu-card-top">
+                        <span class="badge">COMBO</span>
+                        <span class="menu-price">{{ "%.2f"|format(item.price) }} €</span>
+                    </div>
+                    <h3 class="menu-name">{{ item.name }}</h3>
+                    <p class="menu-desc">{{ item.description }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="menu-section">
+            <h2 class="section-title">Food &amp; Snacks</h2>
+            <div class="menu-grid">
+                {% for item in foods %}
+                <article class="menu-card menu-card-food">
+                    <div class="menu-card-top">
+                        <span class="badge">FOOD</span>
+                        <span class="menu-price">{{ "%.2f"|format(item.price) }} €</span>
+                    </div>
+                    <h3 class="menu-name">{{ item.name }}</h3>
+                    <p class="menu-desc">{{ item.description }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="menu-section">
+            <h2 class="section-title">Drinks</h2>
+            <div class="menu-grid">
+                {% for item in drinks %}
+                <article class="menu-card menu-card-drink">
+                    <div class="menu-card-top">
+                        <span class="badge">DRINK</span>
+                        <span class="menu-price">{{ "%.2f"|format(item.price) }} €</span>
+                    </div>
+                    <h3 class="menu-name">{{ item.name }}</h3>
+                    <p class="menu-desc">{{ item.description }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="menu-cta">
+        <a href="{{ url_for('main.index') }}" class="btn-primary">Pick a movie &amp; order →</a>
+    </div>
+{% endblock %}

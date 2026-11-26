@@ -477,7 +477,7 @@ footer p {
 .summary-data {
     margin: 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
 }
 .summary-data dt { font-size: 11px; color: var(--muted); }
@@ -550,7 +550,131 @@ input[type="number"] {
     border-radius: 4px;
 }
 
-/* ---------- 9. Móvil ---------- */
+/* ---------- 9. Selector de días y menú de comida ---------- */
+.day-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.day-picker-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-right: 4px;
+}
+
+.day-pill {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 8px 16px;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    font-family: var(--font-text);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.day-pill:hover {
+    background: var(--yellow);
+}
+
+.day-pill.active {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.day-pill-main {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.day-pill-sub {
+    font-size: 11px;
+    opacity: 0.75;
+}
+
+.see-all-days {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.see-all-days:hover {
+    color: var(--ink);
+    text-decoration: underline;
+}
+
+.showtime-day {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.menu-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.menu-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px;
+    background: var(--paper);
+    border-radius: 4px;
+    border-top: 6px solid var(--yellow);
+}
+
+.menu-card-food { border-top-color: var(--pink); }
+.menu-card-drink { border-top-color: var(--blue); }
+.menu-card-combo { border-top-color: var(--yellow); }
+
+.menu-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.menu-price {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 20px;
+}
+
+.menu-name {
+    margin: 4px 0 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 1.15;
+}
+
+.menu-desc {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.menu-cta {
+    margin-top: 48px;
+}
+
+/* ---------- 10. Móvil ---------- */
 @media (max-width: 640px) {
     .navbar, .container { padding-left: 16px; padding-right: 16px; }
 

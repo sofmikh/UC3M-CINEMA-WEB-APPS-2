@@ -16,6 +16,7 @@
         <nav aria-label="Main">
             <ul class="nav-links">
                 <li><a href="{{ url_for('main.index') }}" class="{{ 'active' if request.endpoint == 'main.index' }}">now showing</a></li>
+                <li><a href="{{ url_for('main.menu') }}" class="{{ 'active' if request.endpoint == 'main.menu' }}">food &amp; drinks</a></li>
                 <li><a href="{{ url_for('main.bookings') }}" class="{{ 'active' if request.endpoint == 'main.bookings' }}">my bookings</a></li>
                 {% if current_user.is_authenticated %}
                     <li><span class="nav-user">hi, {{ current_user.name }}</span></li>

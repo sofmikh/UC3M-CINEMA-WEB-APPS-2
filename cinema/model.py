@@ -71,6 +71,7 @@ class FoodItem(db.Model):
     name: Mapped[str] = mapped_column(String(64))
     description: Mapped[str] = mapped_column(String(256), server_default="")
     price: Mapped[float] = mapped_column(Float)
+    category: Mapped[str] = mapped_column(String(32), server_default="food")
     is_package: Mapped[bool] = mapped_column(default=False)  # True si es un combo con entrada
 
 
