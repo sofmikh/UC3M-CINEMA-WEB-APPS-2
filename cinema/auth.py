@@ -8,7 +8,7 @@ from . import model
 bp = Blueprint("auth", __name__)
 
 
-# ---------- Registro ----------
+
 
 @bp.route("/signup")
 def signup():
@@ -22,18 +22,15 @@ def signup_post():
     password = request.form.get("password")
     password_repeat = request.form.get("password_repeat")
 
-    # 1. Las dos contraseñas tienen que coincidir
     if password != password_repeat:
         flash("Passwords do not match.")
         return redirect(url_for("auth.signup"))
 
-    # 2. El email no puede estar ya registrado
     query = db.select(model.User).where(model.User.email == email)
     if db.session.execute(query).scalar_one_or_none():
         flash("That email is already registered.")
         return redirect(url_for("auth.signup"))
 
-    # 3. Guardamos el usuario con la contraseña cifrada (nunca en texto plano)
     user = model.User(
         email=email,
         name=username,
@@ -46,7 +43,8 @@ def signup_post():
     return redirect(url_for("auth.login"))
 
 
-# ---------- Inicio de sesión ----------
+
+
 
 @bp.route("/login")
 def login():
@@ -67,14 +65,13 @@ def login_post():
 
     flask_login.login_user(user)
 
-    # Si venía de una página protegida (por ejemplo, reservar), le devolvemos allí
     next_page = request.form.get("next")
     if next_page and next_page.startswith("/") and not next_page.startswith("//"):
         return redirect(next_page)
     return redirect(url_for("main.index"))
 
 
-# ---------- Cerrar sesión ----------
+
 
 @bp.route("/logout")
 @flask_login.login_required

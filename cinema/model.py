@@ -8,11 +8,6 @@ from sqlalchemy.sql import func
 from . import db
 
 
-# Roles requeridos según las instrucciones
-class UserRole(enum.Enum):
-    customer = 1
-    management_staff = 2
-
 
 class User(flask_login.UserMixin, db.Model):
     __tablename__ = "users"
@@ -21,8 +16,6 @@ class User(flask_login.UserMixin, db.Model):
     email: Mapped[str] = mapped_column(String(128), unique=True)
     name: Mapped[str] = mapped_column(String(64))
     password: Mapped[str] = mapped_column(String(512))
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.customer)
-
     bookings: Mapped[List["Booking"]] = relationship(back_populates="user")
 
 
@@ -30,9 +23,8 @@ class Screen(db.Model):
     __tablename__ = "screens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(32))  # Ej: 'Sala 1', 'Sala IMAX'
+    name: Mapped[str] = mapped_column(String(32))  #name of the salas
     capacity: Mapped[int] = mapped_column(Integer)
-
     showtimes: Mapped[List["Showtime"]] = relationship(back_populates="screen")
 
 
@@ -42,11 +34,10 @@ class Movie(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(128))
     synopsis: Mapped[str] = mapped_column(String(2048))
-    duration: Mapped[int] = mapped_column(Integer)  # Duración en minutos
-    age_rating: Mapped[str] = mapped_column(String(16))  # Ej: '+12', '+16', 'TP'
+    duration: Mapped[int] = mapped_column(Integer)  # duration in minutes
+    age_rating: Mapped[str] = mapped_column(String(16))  
     genre: Mapped[str] = mapped_column(String(64))
     poster_url: Mapped[Optional[str]] = mapped_column(String(256))
-
     showtimes: Mapped[List["Showtime"]] = relationship(back_populates="movie")
 
 
@@ -54,7 +45,7 @@ class TicketPrice(db.Model):
     __tablename__ = "ticket_prices"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    day_of_week: Mapped[int] = mapped_column(Integer)  # 0: Lunes, ..., 2: Miércoles (espectador), 6: Domingo
+    day_of_week: Mapped[int] = mapped_column(Integer)  
     day_name: Mapped[str] = mapped_column(String(16))
     price: Mapped[float] = mapped_column(Float)
 
@@ -98,6 +89,7 @@ class Booking(db.Model):
     user: Mapped["User"] = relationship(back_populates="bookings")
     showtime: Mapped["Showtime"] = relationship(back_populates="bookings")
     food_items: Mapped[List["BookingFoodItem"]] = relationship(back_populates="booking")
+    seats: Mapped[List["BookingSeat"]] = relationship(back_populates="booking")   
 
 
 class BookingFoodItem(db.Model):
@@ -108,6 +100,14 @@ class BookingFoodItem(db.Model):
     food_item_id: Mapped[int] = mapped_column(ForeignKey("food_items.id"))
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     price_per_unit: Mapped[float] = mapped_column(Float)
-
     booking: Mapped["Booking"] = relationship(back_populates="food_items")
     food_item: Mapped["FoodItem"] = relationship()
+
+
+class BookingSeat(db.Model):
+    __tablename__ = "booking_seats"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"))
+    seat: Mapped[str] = mapped_column(String(8))
+    booking: Mapped["Booking"] = relationship(back_populates="seats")

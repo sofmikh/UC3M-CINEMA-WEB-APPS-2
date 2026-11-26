@@ -4,6 +4,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect          
+
 
 
 class Base(DeclarativeBase):
@@ -24,6 +26,9 @@ def create_app(test_config=None):
 
     db.init_app(app)
 
+    csrf = CSRFProtect()                         
+    csrf.init_app(app)  
+
     login_manager = LoginManager()
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to see that page."
@@ -35,7 +40,6 @@ def create_app(test_config=None):
     def load_user(user_id):
         return db.session.get(model.User, int(user_id))
 
-    # Crea las tablas de la base de datos si todavía no existen
     with app.app_context():
         db.create_all()
 

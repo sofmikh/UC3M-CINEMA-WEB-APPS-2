@@ -1,28 +1,31 @@
 {% extends 'base.html' %}
- 
+
 {% block title %}Choose seats · {{ movie.title }}{% endblock %}
- 
+
 {% block content %}
     <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}" class="back-link">← change showtime</a>
     <h1 class="page-title">Choose your seats.</h1>
- 
-    <!-- Todo es un único formulario: butacas + combos + botón -->
-    <form id="seat-form" action="{{ url_for('main.bookings') }}" method="get" data-price="{{ showtime.price }}">
+
+
+    <form id="seat-form" action="{{ url_for('main.bookings') }}" method="post" data-price="{{ showtime.price }}">
+        <!-- CAMBIO: token CSRF (solo si usas Flask-WTF) -->
+        {% if csrf_token is defined %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
         <input type="hidden" name="showtime_id" value="{{ showtime.id }}">
- 
+
         <div class="booking-layout">
             <div class="seat-area">
                 <div class="seat-scroll">
                     <div class="seat-map">
                         <div class="screen" aria-hidden="true"></div>
                         <p class="screen-label">screen</p>
- 
+
                         {% for row in rows %}
                         <div class="seat-row">
                             <span class="row-letter">{{ row }}</span>
                             {% for n in range(1, seats_per_row + 1) %}
                                 {% set seat_id = row ~ n %}
-                                <!-- Cada butaca es un checkbox oculto + su label (el cuadrado que se ve) -->
                                 <input type="checkbox" name="seats" value="{{ seat_id }}" id="seat-{{ seat_id }}" class="seat-input"
                                        {% if seat_id in occupied %}disabled{% endif %}>
                                 <label for="seat-{{ seat_id }}" class="seat" title="{{ seat_id }}">
@@ -33,7 +36,7 @@
                             <span class="row-letter">{{ row }}</span>
                         </div>
                         {% endfor %}
- 
+
                         <div class="legend">
                             <span><span class="seat"></span>free</span>
                             <span><span class="seat mine"></span>your choice</span>
@@ -41,7 +44,7 @@
                         </div>
                     </div>
                 </div>
- 
+
                 <h2 class="section-title">Add a combo <span class="optional">(optional)</span></h2>
                 <div class="combo-list">
                     {% for pkg in packages %}
@@ -58,8 +61,7 @@
                     {% endfor %}
                 </div>
             </div>
- 
-            <!-- Resumen con forma de entrada -->
+
             <aside class="summary" aria-label="Your ticket">
                 <div class="summary-top">
                     <p class="summary-label">your ticket</p>
@@ -85,27 +87,63 @@
         </div>
     </form>
 {% endblock %}
- 
+
 {% block scripts %}
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
-    // Actualiza el resumen cada vez que marcas una butaca o cambias un combo
-    const form = document.getElementById('seat-form');
-    const seatPrice = parseFloat(form.dataset.price);
- 
-    function updateSummary() {
-        const chosen = Array.from(form.querySelectorAll('input[name="seats"]:checked')).map(i => i.value);
-        let total = chosen.length * seatPrice;
-        form.querySelectorAll('.combo input').forEach(i => {
-            total += (parseInt(i.value) || 0) * parseFloat(i.dataset.price);
-        });
-        document.getElementById('seat-count').textContent = chosen.length;
-        document.getElementById('seat-list').textContent = chosen.length ? chosen.join(' · ') : '—';
-        document.getElementById('total').textContent = total.toFixed(2) + ' €';
-        document.getElementById('submit-btn').disabled = chosen.length === 0;
-    }
- 
-    form.addEventListener('change', updateSummary);
-    form.addEventListener('input', updateSummary);
-    updateSummary();
+    $(document).ready(function() {
+
+        let seatPrice = parseFloat($("#seat-form").attr("data-price"));
+
+        let updateSummary = function() {
+
+            // seats qeu ya hemos marcado
+            let chosen = [];
+            $("input[name='seats']:checked").each(function(i, e) {
+                chosen.push($(e).val());
+            });
+
+            // price of the seats
+            let total = chosen.length * seatPrice;
+
+            // los combos
+            $(".combo input").each(function(i, e) {
+                if ($(e).val() !== "") {
+                    let quantity = parseInt($(e).val());
+                    let comboPrice = parseFloat($(e).attr("data-price"));
+                    total += quantity * comboPrice;
+                }
+            });
+
+            
+            $("#seat-count").text(chosen.length);
+
+            if (chosen.length > 0) {
+                let list = "";
+                for (let i = 0; i < chosen.length; i++) {
+                    if (i > 0) {
+                        list += " · ";
+                    }
+                    list += chosen[i];
+                }
+                $("#seat-list").text(list);
+            } else {
+                $("#seat-list").text("—");
+            }
+
+            $("#total").text(total.toFixed(2) + " €");
+
+            // the button is disabled if no seats are chosen
+            if (chosen.length === 0) {
+                $("#submit-btn").prop("disabled", true);
+            } else {
+                $("#submit-btn").prop("disabled", false);
+            }
+        };
+
+        $("input[name='seats'], .combo input").on("change", updateSummary);
+        updateSummary();
+    });
 </script>
 {% endblock %}

@@ -1,9 +1,9 @@
-import datetime  # <-- FALTABA
+import datetime
 
-from flask import Blueprint, render_template, request, abort
-from flask_login import login_required
+from flask import Blueprint, render_template, request, abort, redirect, url_for
+from flask_login import login_required, current_user
 
-from cinema import model
+from cinema import db, model
 
 bp = Blueprint("main", __name__)
 
@@ -59,32 +59,74 @@ def demo_movies():
 
     return [love, bola, barbie], showtimes
 
-MOVIES_LIST, SHOWTIMES_LIST = demo_movies()
-MOVIES = {m.id: m for m in MOVIES_LIST}
-SHOWTIMES = {st.id: st for st in SHOWTIMES_LIST}
 
 PACKAGES = [
     {"id": 1, "name": "Solo Combo", "desc": "Medium Sweet Popcorn + 500ml Soft Drink", "price": 6.50},
     {"id": 2, "name": "Duo Combo", "desc": "Large Popcorn + 2x 500ml Drinks + Sweet Candy", "price": 10.50},
 ]
 
-OCCUPIED_SEATS = ["A3", "A4", "B7", "B8", "B9", "C1", "C2", "D5", "D6", "D10", "F3", "F4", "F5", "G8", "G9", "H1", "H12"]
+OCCUPIED_SEATS = []
+
+def occupied_seats_for(showtime_id):
+    taken = list(OCCUPIED_SEATS)
+
+    query = (
+        db.select(model.BookingSeat.seat)
+        .join(model.Booking)
+        .where(model.Booking.showtime_id == showtime_id)
+    )
+    for seat in db.session.execute(query).scalars().all():
+        taken.append(seat)
+
+    return taken
 
 
 def showtimes_for(movie_id):
-    """Devuelve la lista de sesiones de una película."""
-    return [st for st in SHOWTIMES.values() if st.movie.id == movie_id]
+    query = (
+        db.select(model.Showtime)
+        .where(model.Showtime.movie_id == movie_id)
+        .where(model.Showtime.show_time >= datetime.datetime.now())
+        .order_by(model.Showtime.show_time)
+    )
+    return db.session.execute(query).scalars().all()
+
+
+def booking_to_dict(b):
+    showtime = b.showtime
+    show_dt = showtime.show_time
+    
+    if show_dt.date() == datetime.date.today():
+        day = "Today"
+    else:
+        day = show_dt.strftime("%d/%m")
+
+    # la comida guardada en booking_food_items
+    food = []
+    for item in b.food_items:
+        for pkg in PACKAGES:
+            if pkg["id"] == item.food_item_id:
+                food.append(f"{item.quantity}x {pkg['name']}")
+
+    return {
+        "id": f"BK-{b.id}",
+        "movie": showtime.movie.title,
+        "showtime": f"{day}, {show_dt.strftime('%H:%M')} - {showtime.screen.name}",
+        "seats": b.num_seats,
+        "food": ", ".join(food) if food else "No food",
+        "total_price": b.total_price,
+        "is_future": show_dt > datetime.datetime.now(),
+    }
 
 
 @bp.route("/")
 def index():
-    movies = list(MOVIES.values())
+    movies = db.session.execute(db.select(model.Movie)).scalars().all() 
     return render_template("main/index.html", movies=movies)
 
 
 @bp.route("/movie/<int:movie_id>")
 def movie_detail(movie_id):
-    movie = MOVIES.get(movie_id)
+    movie = db.session.get(model.Movie, movie_id)
     if movie is None:
         abort(404)
     return render_template(
@@ -96,10 +138,10 @@ def movie_detail(movie_id):
 
 @bp.route("/showtime/<int:showtime_id>/seats")
 def seats(showtime_id):
-    showtime = SHOWTIMES.get(showtime_id)
+    showtime = db.session.get(model.Showtime, showtime_id) 
     if showtime is None:
         abort(404)
-    movie = showtime.movie  # el objeto ya sabe cuál es su película
+    movie = showtime.movie
     return render_template(
         "main/seats.html",
         movie=movie,
@@ -107,51 +149,76 @@ def seats(showtime_id):
         packages=PACKAGES,
         rows="ABCDEFGH",
         seats_per_row=12,
-        occupied=OCCUPIED_SEATS,
+        occupied=occupied_seats_for(showtime_id),     
     )
 
 
-@bp.route("/bookings")
+@bp.route("/bookings", methods=["GET", "POST"])
 @login_required
 def bookings():
-    pending = None
-    chosen_seats = request.args.getlist("seats")
-    showtime = SHOWTIMES.get(request.args.get("showtime_id", type=int))
-    if chosen_seats and showtime:
-        movie = showtime.movie
-        total = len(chosen_seats) * showtime.price
-        food = []
-        for pkg in PACKAGES:
-            qty = request.args.get(f"package_{pkg['id']}", default=0, type=int)
-            if qty > 0:
-                food.append(f"{qty}x {pkg['name']}")
-                total += qty * pkg["price"]
-        pending = {
-            "movie": movie.title,
-            "showtime": f"Today, {showtime.show_time.strftime('%H:%M')} - {showtime.screen.name}",
-            "seats": chosen_seats,
-            "food": ", ".join(food) if food else "No food",
-            "total_price": total,
-        }
 
-    my_bookings = [
-        {
-            "id": "BK-9021",
-            "movie": "The Love Hypothesis",
-            "showtime": "Today, 19:15 - Screen 2 (VIP)",
-            "seats": 2,
-            "food": "1x Duo Combo",
-            "total_price": 31.50,
-            "is_future": True,
-        },
-        {
-            "id": "BK-8412",
-            "movie": "Barbie in A Mermaid Tale",
-            "showtime": "Yesterday, 17:45 - Screen 1",
-            "seats": 1,
-            "food": "1x Solo Combo",
-            "total_price": 14.50,
-            "is_future": False,
-        },
-    ]
-    return render_template("main/bookings.html", bookings=my_bookings, pending=pending)
+    if request.method == "POST":
+        chosen_seats = request.form.getlist("seats")
+        showtime_id = request.form.get("showtime_id", type=int)
+        showtime = db.session.get(model.Showtime, showtime_id) if showtime_id else None
+
+        if chosen_seats and showtime:
+            taken = occupied_seats_for(showtime.id)
+            for seat in chosen_seats:
+                if seat in taken:
+                    abort(400)
+
+            # price of the seats
+            total = len(chosen_seats) * showtime.price
+
+            # foood
+            food_lines = []
+            for pkg in PACKAGES:
+                qty = request.form.get(f"package_{pkg['id']}", default=0, type=int)
+                if qty > 0:
+                    food_lines.append((pkg, qty))
+                    total += qty * pkg["price"]
+
+            #booking
+            booking = model.Booking(
+                user_id=current_user.id,
+                showtime_id=showtime.id,
+                num_seats=len(chosen_seats),
+                total_price=total,
+                created_at=datetime.datetime.now(),
+            )
+            db.session.add(booking)
+
+            # comida booking_food_items
+            for pkg, qty in food_lines:
+                item = model.BookingFoodItem(
+                    booking=booking,
+                    food_item_id=pkg["id"],
+                    quantity=qty,
+                    price_per_unit=pkg["price"],
+                )
+                db.session.add(item)
+
+            for seat in chosen_seats:
+                db.session.add(model.BookingSeat(booking=booking, seat=seat))
+
+            # we save everything to the database
+            db.session.commit()
+
+        # redirect
+        return redirect(url_for("main.bookings"))
+
+    query = (
+        db.select(model.Booking)
+        .where(model.Booking.user_id == current_user.id)
+        .order_by(model.Booking.created_at.desc())
+    )
+    user_bookings = db.session.execute(query).scalars().all()
+
+    my_bookings = []
+    for b in user_bookings:
+        info = booking_to_dict(b)
+        if info is not None:
+            my_bookings.append(info)
+
+    return render_template("main/bookings.html", bookings=my_bookings)
